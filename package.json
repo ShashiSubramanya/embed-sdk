@@ -11,8 +11,9 @@
         "build": "rollup -c",
         "watch": "rollup -cw",
         "develop-docs": "gatsby develop",
-        "build-docs": "gatsby build --prefix-paths",
-        "serve-docs": "gatsby serve --prefix-paths",
+        "build-docs": "gatsby build",
+        "deploy-docs": "gatsby build && gh-pages -d public",
+        "serve-docs": "gatsby serve",
         "clean-docs": "gatsby clean",
         "test": "jest -c jest.config.js"
     },
@@ -34,6 +35,10 @@
         "gatsby-plugin-mdx": "^1.7.1",
         "gatsby-plugin-sass": "^2.8.0",
         "gatsby-source-filesystem": "^2.8.1",
+<<<<<<< Updated upstream
+=======
+        "gatsby-transformer-asciidoc": "^1.8.0",
+>>>>>>> Stashed changes
         "jest": "26.4.2",
         "node-sass": "^4.0.0",
         "prettier": "2.1.2",
