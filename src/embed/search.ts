@@ -7,8 +7,8 @@
  * @author Ayon Ghosh <ayon.ghosh@thoughtspot.com>
  */
 
-import { DataSourceVisualMode, Param } from 'src/types';
-import { getQueryParamString } from 'src/utils';
+import { DataSourceVisualMode, DOMSelector, Param } from '../types';
+import { getQueryParamString } from '../utils';
 import { ViewConfig, TsEmbed } from './base';
 
 export interface SearchViewConfig extends ViewConfig {
@@ -17,7 +17,7 @@ export interface SearchViewConfig extends ViewConfig {
     hideResults?: boolean;
     enableSearchAssist?: boolean;
     disabledActions?: string[];
-    disabledActionReason: string;
+    disabledActionReason?: string;
 }
 
 export interface SearchRenderOptions {
@@ -26,14 +26,24 @@ export interface SearchRenderOptions {
     answerId?: string;
 }
 
+/**
+ * Embed ThoughtSpot search
+ */
 export class SearchEmbed extends TsEmbed {
+    /**
+     * The view configuration for the embedded ThoughtSpot search
+     */
     private viewConfig: SearchViewConfig;
 
-    constructor(domSelector: string, viewConfig: SearchViewConfig) {
+    constructor(domSelector: DOMSelector, viewConfig: SearchViewConfig) {
         super(domSelector);
         this.viewConfig = viewConfig;
     }
 
+    /**
+     * Get the state of the data sources panel that the embedded
+     * ThoughtSpot search will be initialized with
+     */
     private getDataSourceMode() {
         let dataSourceMode = DataSourceVisualMode.Expanded;
         if (this.viewConfig.collapseDataSources === true) {
@@ -46,6 +56,13 @@ export class SearchEmbed extends TsEmbed {
         return dataSourceMode;
     }
 
+    /**
+     * Construct the URL of the embedded ThoughtSpot search to be
+     * loaded in the iframe
+     * @param answerId The GUID of a saved answer
+     * @param dataSources A list of data source GUIDs
+     * @param searchQuery A search query to be fired on load
+     */
     private getIFrameSrc(
         answerId: string,
         dataSources?: string[],
@@ -71,11 +88,16 @@ export class SearchEmbed extends TsEmbed {
         return `${this.getEmbedBasePath()}/${answerPath}${query}`;
     }
 
+    /**
+     * Render ThoughtSpot search
+     * @param renderOptions An object specifying the list of dataSources,
+     * searchQuery and answerId (for loading a saved answer)
+     */
     public render({
         dataSources,
         searchQuery,
         answerId,
-    }: SearchRenderOptions): SearchEmbed {
+    }: SearchRenderOptions = {}): SearchEmbed {
         super.render();
 
         const src = this.getIFrameSrc(answerId, dataSources, searchQuery);

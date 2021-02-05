@@ -7,19 +7,29 @@
  * @author Ayon Ghosh <ayon.ghosh@thoughtspot.com>
  */
 
+/**
+ * The authentication mechanism to be followed
+ * for the embedded app
+ */
 // eslint-disable-next-line no-shadow
 export enum AuthType {
+    None = 'None',
     SSO = 'SSO',
     AuthServer = 'AuthServer',
 }
 
 export type DOMSelector = string | HTMLElement;
 
+/**
+ * The configuration object for embedding, specifying
+ * the ThoughtSpot host or IP address, the authentication
+ * mechanism and the authentication endpoint if a trusted
+ * auth server is being used
+ */
 export interface EmbedConfig {
     thoughtSpotHost: string;
     authType: AuthType;
     authEndpoint?: string;
-    v1?: boolean;
 }
 
 export type MessagePayload = { type: string; data: any };
@@ -31,6 +41,9 @@ export type QueryParams = {
     [key: string]: string;
 };
 
+/**
+ * A map of the supported runtime filter operations
+ */
 // eslint-disable-next-line no-shadow
 export enum RuntimeFilterOp {
     EQ = 'EQ', // equals
@@ -55,6 +68,10 @@ export interface RuntimeFilter {
     values: (number | boolean | string)[];
 }
 
+/**
+ * Supported message types for communication between
+ * the host app and the embedded app
+ */
 // eslint-disable-next-line no-shadow
 export enum EventType {
     // Events emitted by TS app
@@ -64,7 +81,7 @@ export enum EventType {
     Data = 'data',
     FiltersChanged = 'filtersChanged',
     QueryChanged = 'queryChanged',
-    Drilldown = 'drilldown',
+    Drilldown = 'drillDown',
     DataSourceSelected = 'dataSourceSelected',
     CustomAction = 'customAction',
 
@@ -74,6 +91,9 @@ export enum EventType {
     Reload = 'reload',
 }
 
+/**
+ * Message types supported by the v1 of the ThoughtSpot app
+ */
 // eslint-disable-next-line no-shadow
 export enum EventTypeV1 {
     Alert = 'alert',
@@ -81,6 +101,10 @@ export enum EventTypeV1 {
     AuthExpire = 'authExpire',
 }
 
+/**
+ * The different visual modes that the data sources panel within
+ * search could appear in, i.e., hidden, collapsed or expanded
+ */
 // eslint-disable-next-line no-shadow
 export enum DataSourceVisualMode {
     Hidden = 'hide',
@@ -88,6 +112,10 @@ export enum DataSourceVisualMode {
     Expanded = 'expand',
 }
 
+/**
+ * The query params passed down to the embedded ThoughtSpot app
+ * containing configuration and/or visual info
+ */
 // eslint-disable-next-line no-shadow
 export enum Param {
     DataSources = 'dataSources',
@@ -98,6 +126,10 @@ export enum Param {
     HideActions = 'hideAction',
 }
 
+/**
+ * The list of actions that can be performed on visual ThoughtSpot
+ * entities, i.e., answers and pinboards
+ */
 // eslint-disable-next-line no-shadow
 export enum Action {
     Save = 'save',
