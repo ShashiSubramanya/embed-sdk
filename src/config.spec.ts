@@ -1,4 +1,8 @@
-import { getThoughtSpotHost } from './config';
+/**
+ * @jest-environment node
+ */
+
+import { getThoughtSpotHost, getV2BasePath } from './config';
 import { AuthType } from './types';
 
 const embedConfig = {
@@ -14,7 +18,7 @@ describe('getThoughtSpotHost', () => {
             });
         };
 
-        expect(testFn).toThrow(TypeError);
+        expect(testFn).toThrow(Error);
     });
 
     test('IP address/hostname only', () => {
@@ -55,9 +59,27 @@ describe('getThoughtSpotHost', () => {
         expect(
             getThoughtSpotHost({
                 ...embedConfig,
-                thoughtSpotHost:
-                    'http://1.2.3.4:8088/v2/?foo=bar&baz=42#myhash',
+                thoughtSpotHost: 'http://1.2.3.4:8088/v2/?foo=bar&baz=42#myhash',
             }),
         ).toBe('http://1.2.3.4:8088/v2');
+    });
+
+    test('when authtype SAML, fully formed URL with', () => {
+        expect(
+            getThoughtSpotHost({
+                ...embedConfig,
+                authType: AuthType.SAML,
+                thoughtSpotHost: 'http://1.2.3.4:8088/v2/?foo=bar&baz=42#myhash',
+            }),
+        ).toBe('http://1.2.3.4:8088/v2');
+    });
+
+    test('Return correct v2 basepath', () => {
+        const basePath = getV2BasePath({
+            basepath: 'test',
+            thoughtSpotHost: '',
+            authType: AuthType.None,
+        });
+        expect(basePath).toBe('test');
     });
 });

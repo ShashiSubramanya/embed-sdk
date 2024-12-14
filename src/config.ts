@@ -1,10 +1,10 @@
+import { ERROR_MESSAGE } from './errors';
 import { EmbedConfig } from './types';
 
 /**
- * Copyright (c) 2020
+ * Copyright (c) 2023
  *
  * Utilities related to reading configuration objects
- *
  * @summary Config-related utils
  * @author Ayon Ghosh <ayon.ghosh@thoughtspot.com>
  */
@@ -19,12 +19,18 @@ const urlRegex = new RegExp(
     ].join(''),
 );
 
+/**
+ * Parse and construct the ThoughtSpot hostname or IP address
+ * from the embed configuration object.
+ * @param config
+ */
 export const getThoughtSpotHost = (config: EmbedConfig): string => {
+    if (!config.thoughtSpotHost) {
+        throw new Error(ERROR_MESSAGE.INVALID_THOUGHTSPOT_HOST);
+    }
     const urlParts = config.thoughtSpotHost.match(urlRegex);
     if (!urlParts) {
-        throw new Error(
-            `Error parsing ThoughtSpot host: ${config.thoughtSpotHost}. Please provide a valid URL`,
-        );
+        throw new Error(ERROR_MESSAGE.INVALID_THOUGHTSPOT_HOST);
     }
 
     const protocol = urlParts[2] || window.location.protocol;
@@ -40,13 +46,34 @@ export const getThoughtSpotHost = (config: EmbedConfig): string => {
     return `${protocol}//${host}${path}`;
 };
 
+export const getV2BasePath = (config: EmbedConfig): string => {
+    if (config.basepath) {
+        return config.basepath;
+    }
+
+    const tsHost = getThoughtSpotHost(config);
+
+    // This is to handle when e2e's. Search is run on pods for
+    // comp-blink-test-pipeline with baseUrl=https://localhost:8443.
+    // This is to handle when the developer is developing in their local
+    // environment.
+    if (tsHost.includes('://localhost') && !tsHost.includes(':8443')) {
+        return '';
+    }
+
+    return 'v2';
+};
+
 /**
  * It is a good idea to keep URLs under 2000 chars.
  * If this is ever breached, since we pass view configuration through
- * URL params, we would like to log an warning.
+ * URL params, we would like to log a warning.
  * Reference: https://stackoverflow.com/questions/417142/what-is-the-maximum-length-of-a-url-in-different-browsers
  */
 export const URL_MAX_LENGTH = 2000;
 
-export const DEFAULT_EMBED_WIDTH = 500;
-export const DEFAULT_EMBED_HEIGHT = 500;
+/**
+ * The default CSS dimensions of the embedded app
+ */
+export const DEFAULT_EMBED_WIDTH = '100%';
+export const DEFAULT_EMBED_HEIGHT = '100%';

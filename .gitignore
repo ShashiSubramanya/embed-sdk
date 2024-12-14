@@ -85,6 +85,7 @@ dist
 lib
 public/
 docs/public/
+cjs
 
 # Gatsby files
 .cache/
@@ -109,3 +110,6 @@ docs/public/
 
 # Code editors or IDEs
 .vscode/
+
+# Don't ignore examples public folder
+!/examples/public

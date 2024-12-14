@@ -1,14 +1,20 @@
-import { id, getQueryParamString, getFilterQuery } from './utils';
+import {
+    getQueryParamString,
+    getFilterQuery,
+    getCssDimension,
+    getEncodedQueryParamsString,
+    appendToUrlHash,
+    getRedirectUrl,
+    checkReleaseVersionInBeta,
+    getRuntimeParameters,
+    removeTypename,
+    removeStyleProperties,
+    setStyleProperties,
+    isUndefined,
+} from './utils';
 import { RuntimeFilterOp } from './types';
 
 describe('unit test for utils', () => {
-    test('id', () => {
-        // expect unique ids during every invocation
-        const id1 = id();
-        const id2 = id();
-        expect(id1).not.toEqual(id2);
-    });
-
     test('getQueryParamString', () => {
         expect(
             getQueryParamString({
@@ -17,8 +23,28 @@ describe('unit test for utils', () => {
             }),
         ).toBe('foo=bar&baz=42');
         expect(getQueryParamString({})).toBe(null);
+        // should not add undefined params
+        expect(
+            getQueryParamString({
+                foo: undefined,
+                bar: 'baz',
+            }),
+        ).toBe('bar=baz');
     });
 
+    test('getFilterQuery should encode URL params', () => {
+        expect(getFilterQuery([])).toBe(null);
+
+        expect(
+            getFilterQuery([
+                {
+                    columnName: 'foo+foo',
+                    operator: RuntimeFilterOp.NE,
+                    values: ['bar+'],
+                },
+            ]),
+        ).toBe('col1=foo%2Bfoo&op1=NE&val1=bar%2B');
+    });
     test('getFilterQuery', () => {
         expect(getFilterQuery([])).toBe(null);
 
@@ -30,7 +56,7 @@ describe('unit test for utils', () => {
                     values: ['bar'],
                 },
             ]),
-        ).toBe('**col1=foo&op1=NE&val1=bar**');
+        ).toBe('col1=foo&op1=NE&val1=bar');
 
         const filters = [
             {
@@ -50,7 +76,200 @@ describe('unit test for utils', () => {
             },
         ];
         expect(getFilterQuery(filters)).toBe(
-            '**col1=foo&op1=EQ&val1=42&col2=bar&op2=BW_INC&val2=1&val2=10&col3=baz&op3=CONTAINS&val3=abc**',
+            'col1=foo&op1=EQ&val1=42&col2=bar&op2=BW_INC&val2=1&val2=10&col3=baz&op3=CONTAINS&val3=abc',
         );
+    });
+    test('getParameterOverride', () => {
+        expect(getRuntimeParameters([])).toBe(null);
+
+        expect(
+            getRuntimeParameters([
+                {
+                    name: 'foo',
+                    value: 'bar',
+                },
+            ]),
+        ).toBe('param1=foo&paramVal1=bar');
+
+        const params = [
+            {
+                name: 'foo',
+                value: 42,
+            },
+            {
+                name: 'bar',
+                value: 'abc',
+            },
+            {
+                name: 'baz',
+                value: true,
+            },
+        ];
+        expect(getRuntimeParameters(params)).toBe(
+            'param1=foo&paramVal1=42&param2=bar&paramVal2=abc&param3=baz&paramVal3=true',
+        );
+    });
+
+    test('getCssDimension', () => {
+        expect(getCssDimension(100)).toBe('100px');
+        expect(getCssDimension('100%')).toBe('100%');
+        expect(getCssDimension('100px')).toBe('100px');
+        expect(getCssDimension(null)).toBe(null);
+    });
+
+    test('appendToUrlHash', () => {
+        expect(appendToUrlHash('http://myhost:3000', 'hashFrag')).toBe(
+            'http://myhost:3000#hashFrag',
+        );
+        expect(appendToUrlHash('http://xyz.com/#foo', 'bar')).toBe('http://xyz.com/#foobar');
+    });
+
+    describe('getRedirectURL', () => {
+        let windowSpy: any;
+        beforeEach(() => {
+            windowSpy = jest.spyOn(window, 'window', 'get');
+        });
+        afterEach(() => {
+            windowSpy.mockRestore();
+        });
+
+        test('Should return correct value when path is undefined', () => {
+            expect(getRedirectUrl('http://myhost:3000', 'hashFrag')).toBe(
+                'http://myhost:3000#hashFrag',
+            );
+            expect(getRedirectUrl('http://xyz.com/#foo', 'bar')).toBe('http://xyz.com/#foobar');
+        });
+
+        test('Should return correct value when path is set', () => {
+            windowSpy.mockImplementation(() => ({
+                location: {
+                    origin: 'http://myhost:3000',
+                },
+            }));
+
+            expect(getRedirectUrl('http://myhost:3000/', 'hashFrag', '/bar')).toBe(
+                'http://myhost:3000/bar#hashFrag',
+            );
+
+            expect(getRedirectUrl('http://myhost:3000/#/foo', 'hashFrag', '#/bar')).toBe(
+                'http://myhost:3000/#/barhashFrag',
+            );
+        });
+    });
+
+    test('getEncodedQueryParamsString', () => {
+        expect(getEncodedQueryParamsString('')).toBe('');
+        expect(getEncodedQueryParamsString('test')).toBe('dGVzdA');
+    });
+
+    test('when ReleaseVersion is empty ', () => {
+        expect(checkReleaseVersionInBeta('', false)).toBe(false);
+    });
+
+    test('when ReleaseVersion is 7.0.1.cl ', () => {
+        expect(checkReleaseVersionInBeta('7.0.1.cl', false)).toBe(false);
+    });
+
+    test('when cluster has dev version', () => {
+        expect(checkReleaseVersionInBeta('dev', false)).toBe(false);
+    });
+
+    test('when cluster is above 8.4.0.cl-11 software version', () => {
+        expect(checkReleaseVersionInBeta('8.4.0.cl-117', false)).toBe(false);
+    });
+
+    test('when cluster is bellow 8.0.0.sw software version', () => {
+        expect(checkReleaseVersionInBeta('7.2.1.sw', false)).toBe(true);
+    });
+
+    test('when suppressBetaWarning is true and ReleaseVersion is 7.0.1', () => {
+        expect(checkReleaseVersionInBeta('7.0.1', true)).toBe(false);
+    });
+
+    test('when suppressBetaWarning is false ReleaseVersion is 7.0.1', () => {
+        expect(checkReleaseVersionInBeta('7.0.1', false)).toBe(true);
+    });
+
+    test('removeTypename should removed __typename', () => {
+        const input = {
+            test: 'test',
+            __typename: 'should be removed',
+            obj: {
+                test: 'test',
+                __typename: 'should be removed',
+            },
+        };
+        const result = removeTypename(input);
+        const expectedResult = {
+            test: 'test',
+            obj: {
+                test: 'test',
+            },
+        };
+        expect(result).toEqual(expectedResult);
+    });
+
+    describe('validate removeStyleProperties', () => {
+        it('should remove specified style properties from an HTML element', () => {
+            const element = document.createElement('div');
+
+            element.style.backgroundColor = 'blue';
+            element.style.fontSize = '14px';
+
+            const propertiesToRemove = ['background-color', 'font-size'];
+
+            removeStyleProperties(element, propertiesToRemove);
+
+            expect(element.style.backgroundColor).toBe('');
+            expect(element.style.fontSize).toBe('');
+        });
+
+        it('should handle undefined param', () => {
+            expect(() => {
+                removeStyleProperties(undefined, []);
+            }).not.toThrow();
+        });
+
+        it('should handle removing non-existent style properties', () => {
+            const element = document.createElement('div');
+
+            element.style.backgroundColor = 'blue';
+            element.style.fontSize = '14px';
+
+            const propertiesToRemove = ['color', 'border'];
+
+            removeStyleProperties(element, propertiesToRemove);
+
+            expect(element.style.backgroundColor).toBe('blue');
+            expect(element.style.fontSize).toBe('14px');
+        });
+    });
+
+    describe('validate setStyleProperties', () => {
+        it('should set style properties on an HTML element', () => {
+            const element = document.createElement('div');
+
+            const styles = {
+                backgroundColor: 'red',
+                fontSize: '16px',
+            };
+
+            setStyleProperties(element, styles);
+
+            expect(element.style.backgroundColor).toBe('red');
+            expect(element.style.fontSize).toBe('16px');
+        });
+
+        it('should handle undefined param', () => {
+            // should not throw an error
+            expect(() => {
+                setStyleProperties(undefined, {});
+            }).not.toThrow();
+        });
+    });
+
+    test('isUndefined', () => {
+        expect(isUndefined(undefined)).toBe(true);
+        expect(isUndefined({})).toBe(false);
     });
 });
